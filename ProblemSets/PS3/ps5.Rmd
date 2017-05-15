@@ -5,7 +5,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ---
 title: "Problem Set 3 - Sushmita V Gopalan"
-output: html_document
+output: pdf
 ---
 ```{r}
 library(tidyverse)
@@ -68,6 +68,8 @@ ggplot(biden_aes, aes(hat, student)) +
        x = "Leverage",
        y = "Studentized residual")
 ```
+
+
 The bubble plot shows that there are ~167 'unusual' observations. The cluster of blue bubbles at the botton left indicate around 90 observations with high influence. The size of the bubbles is in proportion to the value of the Cooks D measure. We need to investigate these 167 observations in greater detail. 
 
 ```{r, warning=FALSE}
@@ -83,6 +85,8 @@ ggplot(biden_2, mapping = aes(x = party)) +
         y = "Frequency count of individuals") +
   guides(fill = guide_legend(title = ''))
 ```
+
+
 This shows that the 'unusual' observations are distributed disproportionately across parties, suggesting that we might want to control for party in our model. 
 
 2. Non-normally distributed errors.
@@ -90,6 +94,8 @@ This shows that the 'unusual' observations are distributed disproportionately ac
 ```{r}
 car::qqPlot(biden_reg)
 ```
+
+
 The quantile plot shows that the errors are not normally distributed.
 
 ```{r}
@@ -100,6 +106,8 @@ augment(biden_reg, biden) %>%
   labs(x = "Studentized residuals",
        y = "Estimated density")
 ```
+
+
 The density plot for the residuals also shows a distribution that isn't normal at all - observe the skew and the multiple peaks. Typically, power or log transformations are used to address this issue. Alternatively, we could add the party variable as control or use interaction terms.
 
 3. Heteroscedasticity
@@ -120,6 +128,7 @@ biden %>%
 bptest(biden_reg)
 ```
 
+
 The residual plot and the BP test both show clearly that homoskedasticity is present. The p-value for the BP test is very small, indicating that we reject its null hypothesis of constant variance. This is potentially problematic in that it could lead us to falsely identify statistical significance - when variance in the error terms isn't constant, standard errors are influenced in a certain direction, which, in turn, affects t-statistics and associated p-values.
 
 4. Multicollinearity
@@ -127,10 +136,14 @@ The residual plot and the BP test both show clearly that homoskedasticity is pre
 ```{r}
 ggpairs(select_if(biden, is.numeric))
 ```
+
+
 The correlation matrix doesn't indicate that multicollinearity exists.
 ```{r}
 vif(biden_reg)
 ```
+
+
 VIF factors confirm that multicollinearity is not an issue with the data. 
 
 
@@ -181,11 +194,15 @@ instant_effect(biden, "educ") %>%
        x = "Education",
        y = "Estimated marginal effect")
 ```
+
+
 The above plot shows the marginal effect of age as edcuation increases. We find that it decreases as education increases - it is positive until educ = 14 and is thereafter, negative. For statistical significance, we perform the linear hypothesis test. 
 
 ```{r}
 linearHypothesis(lm_inter_biden, "age + age:educ")
 ```
+
+
 The very low p-value (far less than 0.001) suggests that the marginal effect is indeed statistically significant.
 
 2. Evaluate the marginal effect of education on Joe Biden thermometer rating, conditional on age. Consider the magnitude and direction of the marginal effect, as well as its statistical significance.
@@ -202,6 +219,8 @@ instant_effect(biden, "age") %>%
        x = "Age",
        y = "Estimated marginal effect")
 ```
+
+
 The marginal effect of education decreases as age increases, as the plot above displays. 
 
 ```{r}
@@ -216,18 +235,21 @@ Consider the multivariate normality assumption and transform any variables as yo
 
 We first plot normal quantile plots to see if the variables are normally distributed by themselves.
 
-```{r,error=TRUE}
+```{r}
+biden <- read.csv('biden.csv')
 biden_reg <- lm(biden ~ age + female + educ, data = biden)
 biden_num <- biden %>%
   select(-female, -rep, -dem)
 uniPlot(biden_num, type = "qqplot")
 ```
 
+
 None of them appear to be normally distributed, individually. We run Mardia's test to check for multivariate normality and find that the data are not multivariate normal. 
 
 ```{r}
 mardiaTest(biden, qqplot = FALSE)
 ```
+
 
 Transforming biden to log(biden) and educ to square-root seems to produce a marginal improvement. However, the data remain not multivariate normal, as Mardia's Test below shows. 
 ```{r}
@@ -241,6 +263,7 @@ uniPlot(biden_trans, type = "qqplot")
 ```{r}
 mardiaTest(biden_trans%>% select(sqrt_educ, log_biden), qqplot = FALSE)
 ```
+
 
 I now proceed to compare 3 models - 1) listwise deletion, 2) full imputation and 3) imputation + transformed variables
 
@@ -324,5 +347,6 @@ bind_rows(orig = tidy(lm_listwise),
         plot.subtitle = element_text(hjust = 0.5),
         panel.border = element_rect(linetype = "solid", color = "grey70", fill=NA, size=1.1))
 ```
+
 
 The graph clearly shows that confidence intervals for the parameters overlap across the three models - indicating that there isn't a significant difference across the three methods.
